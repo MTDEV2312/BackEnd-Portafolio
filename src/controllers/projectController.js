@@ -5,6 +5,20 @@ const projectController = {
   create: async (req, res) => {
     try {
       const projectData = req.body;
+      
+      // Si hay una imagen subida, procesarla
+      if (req.file) {
+        try {
+          // Subir la imagen al storage y obtener la URL
+          const imageUrl = await projectService.uploadImage(req.file.buffer, req.file.originalname);
+          projectData.imageSrc = imageUrl;
+        } catch (uploadError) {
+          console.error('Error al subir la imagen:', uploadError);
+          return res.status(500).json({
+            error: 'Error al subir la imagen al storage'
+          });
+        }
+      }
 
       // Validar datos usando el esquema
       for (const [key, value] of Object.entries(ProjectSchema)) {
@@ -47,6 +61,20 @@ const projectController = {
     try {
       const { id } = req.params;
       const projectData = req.body;
+
+      // Si hay una imagen subida, procesarla
+      if (req.file) {
+        try {
+          // Subir la imagen al storage y obtener la URL
+          const imageUrl = await projectService.uploadImage(req.file.buffer, req.file.originalname);
+          projectData.imageSrc = imageUrl;
+        } catch (uploadError) {
+          console.error('Error al subir la imagen:', uploadError);
+          return res.status(500).json({
+            error: 'Error al subir la imagen al storage'
+          });
+        }
+      }
 
       const updatedProject = await projectService.update(id, projectData);
       res.status(200).json({

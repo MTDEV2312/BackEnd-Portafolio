@@ -38,8 +38,30 @@ export const projectValidationSchemas = {
     githubLink: Joi.string().uri().optional().allow(''),
     liveDemoLink: Joi.string().uri().optional().allow('')
   }),
+  createWithFile: Joi.object({
+    // imageSrc es opcional porque se generará automáticamente desde el archivo
+    title: Joi.string().min(3).max(100).required().messages({
+      'string.min': 'El título debe tener al menos 3 caracteres',
+      'string.max': 'El título no puede exceder 100 caracteres',
+      'any.required': 'El título es obligatorio'
+    }),
+    description: Joi.string().min(10).max(500).required().messages({
+      'string.min': 'La descripción debe tener al menos 10 caracteres',
+      'string.max': 'La descripción no puede exceder 500 caracteres',
+      'any.required': 'La descripción es obligatoria'
+    }),
+    githubLink: Joi.string().uri().optional().allow(''),
+    liveDemoLink: Joi.string().uri().optional().allow('')
+  }),
   update: Joi.object({
     imageSrc: Joi.string().uri().optional(),
+    title: Joi.string().min(3).max(100).optional(),
+    description: Joi.string().min(10).max(500).optional(),
+    githubLink: Joi.string().uri().optional().allow(''),
+    liveDemoLink: Joi.string().uri().optional().allow('')
+  }),
+  updateWithFile: Joi.object({
+    // imageSrc es opcional porque se puede generar desde el archivo o mantener el actual
     title: Joi.string().min(3).max(100).optional(),
     description: Joi.string().min(10).max(500).optional(),
     githubLink: Joi.string().uri().optional().allow(''),
@@ -73,6 +95,47 @@ export const profileValidationSchemas = {
 // Middleware de validación genérico
 export const validateBody = (schema) => {
   return (req, res, next) => {
+    const { error, value } = schema.validate(req.body, { 
+      abortEarly: false,
+      stripUnknown: true 
+    });
+
+    if (error) {
+      const errorDetails = error.details.map(detail => ({
+        field: detail.context.key,
+        message: detail.message
+      }));
+
+      return res.status(400).json({
+        error: 'Datos de entrada inválidos',
+        details: errorDetails
+      });
+    }
+
+    // Reemplazar req.body con los datos validados y sanitizados
+    req.body = value;
+    next();
+  };
+};
+
+// Middleware de validación específico para proyectos
+export const validateProjectBody = (operation) => {
+  return (req, res, next) => {
+    // Determinar qué esquema usar basado en si hay un archivo
+    let schema;
+    if (operation === 'create') {
+      schema = req.file ? projectValidationSchemas.createWithFile : projectValidationSchemas.create;
+      
+      // Si no hay archivo ni imageSrc, es un error
+      if (!req.file && !req.body.imageSrc) {
+        return res.status(400).json({
+          error: 'Se requiere una imagen. Proporciona un archivo o una URL de imagen.'
+        });
+      }
+    } else if (operation === 'update') {
+      schema = req.file ? projectValidationSchemas.updateWithFile : projectValidationSchemas.update;
+    }
+
     const { error, value } = schema.validate(req.body, { 
       abortEarly: false,
       stripUnknown: true 

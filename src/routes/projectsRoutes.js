@@ -1,8 +1,9 @@
 import projectController from '../controllers/projectController.js';
 import { Router } from 'express';
 import { authenticateUser } from '../middleware/authMiddleware.js';
-import { validateBody, validateParams, projectValidationSchemas, idSchema } from '../middleware/validationMiddleware.js';
+import { validateParams, validateProjectBody, idSchema } from '../middleware/validationMiddleware.js';
 import { catchAsync } from '../middleware/errorMiddleware.js';
+import { upload, handleMulterError } from '../middleware/uploadMiddleware.js';
 import { 
   validateTablePermissions, 
   databaseAuditLogger, 
@@ -25,7 +26,9 @@ router.post('/create',
   authenticateUser,
   validateTablePermissions('proyectos', 'create'),
   operationRateLimit('create_project', 10, 15 * 60 * 1000),
-  validateBody(projectValidationSchemas.create),
+  upload.single('image'), // Middleware para manejar la imagen
+  handleMulterError, // Middleware para manejar errores de multer
+  validateProjectBody('create'), // Validación adaptativa
   databaseAuditLogger('INSERT', 'proyectos'),
   catchAsync(projectController.create)
 );
@@ -35,7 +38,9 @@ router.patch('/update/:id',
   validateTablePermissions('proyectos', 'update'),
   operationRateLimit('update_project', 20, 15 * 60 * 1000),
   validateParams(idSchema),
-  validateBody(projectValidationSchemas.update),
+  upload.single('image'), // Middleware para manejar la imagen (opcional en actualización)
+  handleMulterError, // Middleware para manejar errores de multer
+  validateProjectBody('update'), // Validación adaptativa
   databaseAuditLogger('UPDATE', 'proyectos'),
   catchAsync(projectController.update)
 );

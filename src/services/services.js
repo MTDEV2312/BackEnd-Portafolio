@@ -26,6 +26,34 @@ const userService = {
 };
 
 const projectService = {
+    uploadImage: async (file, fileName) => {
+        try {
+            // Generar un nombre único para el archivo
+            const timestamp = Date.now();
+            const uniqueFileName = `${timestamp}_${fileName}`;
+            
+            // Subir la imagen al storage de Supabase
+            const { data, error } = await supabase.storage
+                .from('Images')
+                .upload(uniqueFileName, file, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
+
+            if (error) throw error;
+
+            // Obtener la URL pública de la imagen
+            const { data: publicUrlData } = supabase.storage
+                .from('Images')
+                .getPublicUrl(uniqueFileName);
+
+            return publicUrlData.publicUrl;
+        } catch (error) {
+            console.error('Error al subir la imagen:', error);
+            throw error;
+        }
+    },
+
     create: async (projectData) => {
         const { data, error } = await supabase
             .from('proyectos')
