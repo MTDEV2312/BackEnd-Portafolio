@@ -16,4 +16,5 @@ export const ProjectSchema = {
   description: { type: 'string', required: true },
   githubLink: { type: 'string', required: false },
   liveDemoLink: { type: 'string', required: false },
+  techSection: { type: 'string', required: true },
 };
