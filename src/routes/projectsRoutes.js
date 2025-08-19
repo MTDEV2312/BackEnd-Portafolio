@@ -5,7 +5,6 @@ import { validateParams, validateProjectBody, idSchema } from '../middleware/val
 import { catchAsync } from '../middleware/errorMiddleware.js';
 import { upload, handleMulterError } from '../middleware/uploadMiddleware.js';
 import { 
-  validateTablePermissions, 
   databaseAuditLogger, 
   operationRateLimit,
   sanitizeSupabaseQuery 
@@ -24,7 +23,6 @@ router.get('/read',
 // Rutas privadas (requieren autenticación)
 router.post('/create', 
   authenticateUser,
-  validateTablePermissions('proyectos', 'create'),
   operationRateLimit('create_project', 10, 15 * 60 * 1000),
   upload.single('image'), // Middleware para manejar la imagen
   handleMulterError, // Middleware para manejar errores de multer
@@ -35,7 +33,6 @@ router.post('/create',
 
 router.patch('/update/:id', 
   authenticateUser,
-  validateTablePermissions('proyectos', 'update'),
   operationRateLimit('update_project', 20, 15 * 60 * 1000),
   validateParams(idSchema),
   upload.single('image'), // Middleware para manejar la imagen (opcional en actualización)
@@ -47,7 +44,6 @@ router.patch('/update/:id',
 
 router.delete('/delete/:id', 
   authenticateUser,
-  validateTablePermissions('proyectos', 'delete'),
   operationRateLimit('delete_project', 5, 15 * 60 * 1000),
   validateParams(idSchema),
   databaseAuditLogger('DELETE', 'proyectos'),

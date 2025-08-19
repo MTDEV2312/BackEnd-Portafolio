@@ -76,18 +76,31 @@ export const profileValidationSchemas = {
       'string.max': 'El nombre no puede exceder 50 caracteres',
       'any.required': 'El nombre es obligatorio'
     }),
-    perfilUrl: Joi.string().uri().required().messages({
-      'string.uri': 'La URL del perfil debe ser válida',
-      'any.required': 'La URL del perfil es obligatoria'
+    perfilUrl: Joi.string().uri().optional().messages({
+      'string.uri': 'La URL del perfil debe ser válida'
     }),
-    aboutMeDescription: Joi.string().min(10).max(1000).required().messages({
+    aboutMeDescription: Joi.string().min(10).max(1000).optional().messages({
       'string.min': 'La descripción debe tener al menos 10 caracteres',
-      'string.max': 'La descripción no puede exceder 1000 caracteres',
-      'any.required': 'La descripción es obligatoria'
+      'string.max': 'La descripción no puede exceder 1000 caracteres'
     }),
-    contactEmail: Joi.string().email().required().messages({
-      'string.email': 'El email de contacto debe tener un formato válido',
-      'any.required': 'El email de contacto es obligatorio'
+    contactEmail: Joi.string().email().optional().messages({
+      'string.email': 'El email de contacto debe tener un formato válido'
+    })
+  }),
+  update: Joi.object({
+    nombre: Joi.string().min(2).max(50).optional().messages({
+      'string.min': 'El nombre debe tener al menos 2 caracteres',
+      'string.max': 'El nombre no puede exceder 50 caracteres'
+    }),
+    perfilUrl: Joi.string().uri().optional().messages({
+      'string.uri': 'La URL del perfil debe ser válida'
+    }),
+    aboutMeDescription: Joi.string().min(10).max(1000).optional().messages({
+      'string.min': 'La descripción debe tener al menos 10 caracteres',
+      'string.max': 'La descripción no puede exceder 1000 caracteres'
+    }),
+    contactEmail: Joi.string().email().optional().messages({
+      'string.email': 'El email de contacto debe tener un formato válido'
     })
   })
 };

@@ -102,7 +102,6 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     timestamp: new Date().toISOString(),
     endpoints: {
-      users: '/api/users',
       profiles: '/api/profiles',
       projects: '/api/projects',
       health: '/health'

@@ -17,16 +17,26 @@ const userController = {
     login: catchAsync(async (req, res) => {
         const { email, password } = req.body;
         
-        const user = await userService.login(email, password);
-        if (!user) {
-            throw new AuthenticationError('Credenciales inválidas');
-        }
+        try {
+            const user = await userService.login(email, password);
+            
+            if (!user || !user.user) {
+                throw new AuthenticationError('Credenciales inválidas');
+            }
 
-        res.status(200).json({
-            success: true,
-            message: 'Inicio de sesión exitoso',
-            data: user
-        });
+            res.status(200).json({
+                success: true,
+                message: 'Inicio de sesión exitoso',
+                data: user
+            });
+        } catch (error) {
+            // Si es un error de Supabase de credenciales inválidas
+            if (error.message.includes('Invalid login credentials')) {
+                throw new AuthenticationError('Credenciales inválidas');
+            }
+            // Re-throw otros errores para que sean manejados por el middleware
+            throw error;
+        }
     }),
 
     logout: catchAsync(async (req, res) => {

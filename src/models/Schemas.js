@@ -5,9 +5,24 @@ export const UserSchema = {
 
 export const PresenterSchema = {
   nombre: { type: 'string', required: true },
+  perfilUrl: { type: 'string', required: false },
+  aboutMeDescription: { type: 'string', required: false },
+  contactEmail: { type: 'string', required: false },
+};
+
+// Esquema específico para creación (más estricto)
+export const PresenterCreateSchema = {
+  nombre: { type: 'string', required: true },
   perfilUrl: { type: 'string', required: true },
-  aboutMeDescription: { type: 'string', required: true },
   contactEmail: { type: 'string', required: true },
+};
+
+// Esquema específico para actualización (más flexible)
+export const PresenterUpdateSchema = {
+  nombre: { type: 'string', required: false },
+  perfilUrl: { type: 'string', required: false },
+  aboutMeDescription: { type: 'string', required: false },
+  contactEmail: { type: 'string', required: false },
 };
 
 export const ProjectSchema = {

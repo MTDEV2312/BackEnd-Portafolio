@@ -1,4 +1,4 @@
-import {PresenterSchema} from '../models/Schemas.js';
+import {PresenterSchema, PresenterCreateSchema, PresenterUpdateSchema} from '../models/Schemas.js';
 import {profileService} from '../services/services.js';
 
 const profileController = {
@@ -6,8 +6,12 @@ const profileController = {
         try {
             const presentadorData = req.body;
 
-            // Validar datos usando el esquema
-            for (const [key, value] of Object.entries(PresenterSchema)) {
+            // Determinar si es una creación o actualización
+            const presentadorExistente = await profileService.read();
+            const schema = presentadorExistente ? PresenterUpdateSchema : PresenterCreateSchema;
+
+            // Validar datos usando el esquema apropiado
+            for (const [key, value] of Object.entries(schema)) {
                 if (value.required && !presentadorData[key]) {
                     return res.status(400).json({
                         error: `El campo '${key}' es obligatorio.`
@@ -17,13 +21,14 @@ const profileController = {
 
             const newPresentador = await profileService.create(presentadorData);
             res.status(201).json({
-                message: 'About me creado exitosamente',
+                message: 'About me creado/actualizado exitosamente',
                 data: newPresentador
             });
         } catch (error) {
             console.error('Error al crear el About me:', error);
             res.status(500).json({
-                error: 'Error interno del servidor'
+                error: 'Error interno del servidor',
+                details: error.message
             });
         }
     },

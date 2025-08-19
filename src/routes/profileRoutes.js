@@ -4,7 +4,6 @@ import { authenticateUser } from '../middleware/authMiddleware.js';
 import { validateBody, profileValidationSchemas } from '../middleware/validationMiddleware.js';
 import { catchAsync } from '../middleware/errorMiddleware.js';
 import { 
-  validateTablePermissions, 
   databaseAuditLogger, 
   operationRateLimit,
   sanitizeSupabaseQuery 
@@ -23,11 +22,18 @@ router.get('/read',
 // Rutas privadas (requieren autenticación)
 router.post('/create', 
   authenticateUser,
-  validateTablePermissions('presentador', 'create'),
   operationRateLimit('create_profile', 5, 15 * 60 * 1000),
   validateBody(profileValidationSchemas.create),
   databaseAuditLogger('UPSERT', 'presentador'),
   catchAsync(profileController.create)
+);
+
+router.patch('/update', 
+  authenticateUser,
+  operationRateLimit('update_profile', 10, 15 * 60 * 1000),
+  validateBody(profileValidationSchemas.update),
+  databaseAuditLogger('UPDATE', 'presentador'),
+  catchAsync(profileController.create) // Usa el mismo controlador porque maneja upsert
 );
 
 export default router;

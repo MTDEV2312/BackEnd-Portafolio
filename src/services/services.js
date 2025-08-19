@@ -2,26 +2,48 @@ import supabase from '../config/config.js';
 
 const userService = {
     login: async (email, password) => {
-        const {data,error} = await supabase.auth.signInWithPassword({
-            email,
-            password
-        });
-        if (error) throw error;
-        return data;
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+            
+            if (error) {
+                throw error;
+            }
+            
+            return data;
+        } catch (error) {
+            throw error;
+        }
     },
     register: async (userData) => {
-        const { email, password } = userData;
-        const {data,error} = await supabase.auth.signUp({
-            email,
-            password
-        });
-        if (error) throw error;
-        return data;
+        try {
+            const { email, password } = userData;
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password
+            });
+            
+            if (error) {
+                throw error;
+            }
+            
+            return data;
+        } catch (error) {
+            throw error;
+        }
     },
     logout: async () => {
-        const {error} = await supabase.auth.signOut();
-        if (error) throw error;
-        return true;
+        try {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                throw error;
+            }
+            return true;
+        } catch (error) {
+            throw error;
+        }
     }
 };
 
@@ -100,39 +122,87 @@ const profileService = {
       throw error;
     }
 
+    // Convertir snake_case a camelCase para el frontend
+    if (data) {
+      const mappedData = {
+        id: data.id,
+        nombre: data.nombre,
+        perfilUrl: data.perfil_url,
+        aboutMeDescription: data.about_me_description,
+        contactEmail: data.contact_email
+      };
+      return mappedData;
+    }
+
     return data;
   },
   create: async (presentadorData) => {
-    // 1. Primero, intentamos obtener el presentador actual
-    const presentadorActual = await profileService.read();
+    try {
+      // Mapear campos de camelCase a snake_case según la estructura de BD
+      const fieldMapping = {
+        'nombre': 'nombre',
+        'perfilUrl': 'perfil_url',
+        'aboutMeDescription': 'about_me_description',
+        'contactEmail': 'contact_email'
+      };
 
-    let data, error;
+      const filteredData = {};
+      
+      // Mapear y filtrar campos
+      for (const [camelField, snakeField] of Object.entries(fieldMapping)) {
+        if (presentadorData[camelField] !== undefined && presentadorData[camelField] !== null) {
+          filteredData[snakeField] = presentadorData[camelField];
+        }
+      }
 
-    if (presentadorActual) {
-      // 2. Si existe, lo actualizamos (UPDATE)
-      console.log('Presentador existente, actualizando...');
-      ({ data, error } = await supabase
-        .from('presentador')
-        .update(presentadorData)
-        .eq('id', presentadorActual.id) // Apuntamos al ID del registro existente
-        .select()
-        .single());
-    } else {
-      // 3. Si no existe, lo creamos (INSERT)
-      console.log('No hay presentador, creando nuevo registro...');
-      ({ data, error } = await supabase
-        .from('presentador')
-        .insert(presentadorData)
-        .select()
-        .single());
-    }
+      console.log('🔄 Datos filtrados para BD:', filteredData);
 
-    if (error) {
-      console.error('Error al guardar el presentador:', error);
+      // 1. Primero, intentamos obtener el presentador actual
+      const presentadorActual = await profileService.read();
+
+      let data, error;
+
+      if (presentadorActual) {
+        // 2. Si existe, lo actualizamos (UPDATE)
+        console.log('Presentador existente, actualizando...');
+        ({ data, error } = await supabase
+          .from('presentador')
+          .update(filteredData)
+          .eq('id', presentadorActual.id) // Apuntamos al ID del registro existente
+          .select()
+          .single());
+      } else {
+        // 3. Si no existe, lo creamos (INSERT)
+        console.log('No hay presentador, creando nuevo registro...');
+        ({ data, error } = await supabase
+          .from('presentador')
+          .insert(filteredData)
+          .select()
+          .single());
+      }
+
+      if (error) {
+        console.error('Error al guardar el presentador:', error);
+        throw error;
+      }
+
+      // Mapear datos de respuesta de snake_case a camelCase
+      if (data) {
+        const mappedResponse = {
+          id: data.id,
+          nombre: data.nombre,
+          perfilUrl: data.perfil_url,
+          aboutMeDescription: data.about_me_description,
+          contactEmail: data.contact_email
+        };
+        return mappedResponse;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error en profileService.create:', error);
       throw error;
     }
-
-    return data;
   }
 }
 
