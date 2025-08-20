@@ -56,15 +56,15 @@ export const errorHandler = (err, req, res, next) => {
   let error = { ...err };
   error.message = err.message;
 
-  // Log del error
-  console.error('Error capturado:', {
-    message: err.message,
-    stack: err.stack,
-    url: req.originalUrl,
-    method: req.method,
-    ip: req.ip,
-    timestamp: new Date().toISOString()
-  });
+  // Log del error (simplificado para producción)
+  if (process.env.NODE_ENV !== 'production') {
+    console.error('Error capturado:', {
+      message: err.message,
+      url: req.originalUrl,
+      method: req.method,
+      timestamp: new Date().toISOString()
+    });
+  }
 
   // Error de Supabase - Credenciales inválidas
   if (err.message && err.message.includes('Invalid login credentials')) {

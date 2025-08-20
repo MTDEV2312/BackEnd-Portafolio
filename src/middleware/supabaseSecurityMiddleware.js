@@ -23,27 +23,16 @@ export const databaseAuditLogger = (operation, table) => {
     res.send = function(body) {
       // Log exitoso de la operación
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        console.log('📊 Operación de BD exitosa:', {
-          operation,
-          table,
-          user: req.user?.id || 'anonymous',
-          ip: req.ip,
-          timestamp: new Date().toISOString(),
-          statusCode: res.statusCode
-        });
+        // TODO: Implementar logger profesional para producción
+        // Operación de BD exitosa: operation, table, user, ip, timestamp, statusCode
       }
       
       originalSend.call(this, body);
     };
 
     // Log de inicio de operación
-    console.log('🔄 Iniciando operación de BD:', {
-      operation,
-      table,
-      user: req.user?.id || 'anonymous',
-      ip: req.ip,
-      timestamp: new Date().toISOString()
-    });
+    // TODO: Implementar logger profesional para producción
+    // Iniciando operación de BD: operation, table, user, ip, timestamp
 
     next();
   };
@@ -81,16 +70,16 @@ export const validateTablePermissions = (table, operation) => {
       const allowedRoles = permissions[table]?.[operation] || [];
 
       if (!allowedRoles.includes(userRole)) {
-        console.warn('🚫 Acceso denegado a tabla:', {
-          user: req.user.id,
-          table,
-          operation,
-          userRole,
-          allowedRoles,
-          ip: req.ip,
-          timestamp: new Date().toISOString()
-        });
-
+        // Acceso denegado - log solo en desarrollo
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('🚫 Acceso denegado a tabla:', {
+            user: req.user.id,
+            table,
+            operation,
+            userRole
+          });
+        }
+        
         return res.status(403).json({
           success: false,
           error: 'Permisos insuficientes',
@@ -100,7 +89,6 @@ export const validateTablePermissions = (table, operation) => {
 
       next();
     } catch (error) {
-      console.error('Error validando permisos:', error);
       return res.status(500).json({
         success: false,
         error: 'Error interno del servidor',
@@ -127,13 +115,13 @@ export const sanitizeSupabaseQuery = (req, res, next) => {
       if (allowedParams.includes(key) || key.startsWith('_')) {
         sanitizedQuery[key] = req.query[key];
       } else {
-        console.warn('🚨 Parámetro de query no permitido:', {
-          parameter: key,
-          value: req.query[key],
-          ip: req.ip,
-          url: req.originalUrl,
-          timestamp: new Date().toISOString()
-        });
+        // Parámetro no permitido - log solo en desarrollo
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('🚨 Parámetro de query no permitido:', {
+            parameter: key,
+            url: req.originalUrl
+          });
+        }
       }
     });
 
@@ -163,13 +151,14 @@ export const operationRateLimit = (operation, maxRequests = 50, windowMs = 15 * 
     const userRequests = requests.get(key);
 
     if (userRequests.length >= maxRequests) {
-      console.warn('🚨 Rate limit excedido para operación:', {
-        operation,
-        ip: req.ip,
-        requests: userRequests.length,
-        maxRequests,
-        timestamp: new Date().toISOString()
-      });
+      // Rate limit excedido - log solo en desarrollo
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('🚨 Rate limit excedido:', {
+          operation,
+          requests: userRequests.length,
+          maxRequests
+        });
+      }
 
       return res.status(429).json({
         success: false,

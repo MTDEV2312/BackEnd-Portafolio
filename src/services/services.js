@@ -48,38 +48,93 @@ const userService = {
 };
 
 const projectService = {
-    uploadImage: async (file, fileName) => {
+    uploadImage: async (file, fileName, user = null, preventDuplicates = false) => {
         try {
             // Generar un nombre único para el archivo
             const timestamp = Date.now();
-            const uniqueFileName = `${timestamp}_${fileName}`;
+            const uniqueFileName = `projects/${timestamp}_${fileName}`;
             
-            // Subir la imagen al storage de Supabase
+            // Opcional: Verificar duplicados basados en contenido (hash)
+            if (preventDuplicates) {
+                // Esta funcionalidad se puede implementar más adelante si es necesaria
+            }
+            
+            // Subir directamente al bucket Images (sin verificar si existe)
             const { data, error } = await supabase.storage
                 .from('Images')
                 .upload(uniqueFileName, file, {
                     cacheControl: '3600',
-                    upsert: false
+                    upsert: true,
+                    contentType: 'image/*'
                 });
 
-            if (error) throw error;
+            if (error) {
+                // Proporcionar información más específica del error
+                if (error.message.includes('policy') || error.statusCode === '403') {
+                    throw new Error(`Error de permisos RLS: ${error.message}. 
+                    
+Solución: Ejecuta estas consultas en Supabase Dashboard > SQL Editor:
+
+CREATE POLICY IF NOT EXISTS "Allow public uploads to Images bucket" 
+ON storage.objects FOR INSERT TO public 
+WITH CHECK (bucket_id = 'Images');
+
+CREATE POLICY IF NOT EXISTS "Allow public access to Images bucket" 
+ON storage.objects FOR SELECT TO public 
+USING (bucket_id = 'Images');`);
+                }
+                
+                throw error;
+            }
 
             // Obtener la URL pública de la imagen
             const { data: publicUrlData } = supabase.storage
                 .from('Images')
                 .getPublicUrl(uniqueFileName);
-
+                
             return publicUrlData.publicUrl;
+            
         } catch (error) {
-            console.error('Error al subir la imagen:', error);
+            throw error;
+        }
+    },
+
+    deleteImageFromStorage: async (imageUrl) => {
+        try {
+            // Extraer el nombre del archivo de la URL
+            const urlParts = imageUrl.split('/');
+            const fileName = urlParts[urlParts.length - 1];
+            const folderPath = urlParts[urlParts.length - 2];
+            const fullPath = `${folderPath}/${fileName}`;
+            
+            const { data, error } = await supabase.storage
+                .from('Images')
+                .remove([fullPath]);
+
+            if (error) {
+                throw error;
+            }
+            
+            return data;
+        } catch (error) {
             throw error;
         }
     },
 
     create: async (projectData) => {
+        // Mapear campos de camelCase a snake_case para la base de datos
+        const dbProjectData = {
+            title: projectData.title,
+            description: projectData.description,
+            image_src: projectData.imageSrc,
+            github_link: projectData.githubLink,
+            live_demo_link: projectData.liveDemoLink,
+            techSection: projectData.techSection
+        };
+
         const { data, error } = await supabase
             .from('proyectos')
-            .insert([projectData]);
+            .insert([dbProjectData]);
         if (error) throw error;
         return data;
     },
@@ -90,10 +145,30 @@ const projectService = {
         if (error) throw error;
         return data;
     },
-    update: async (id, projectData) => {
+    getById: async (id) => {
         const { data, error } = await supabase
             .from('proyectos')
-            .update(projectData)
+            .select('*')
+            .eq('id', id)
+            .single();
+        if (error) throw error;
+        return data;
+    },
+    update: async (id, projectData) => {
+        // Mapear campos de camelCase a snake_case para la base de datos
+        const dbProjectData = {};
+        
+        // Mapear solo los campos que están presentes en projectData
+        if (projectData.title !== undefined) dbProjectData.title = projectData.title;
+        if (projectData.description !== undefined) dbProjectData.description = projectData.description;
+        if (projectData.imageSrc !== undefined) dbProjectData.image_src = projectData.imageSrc;
+        if (projectData.githubLink !== undefined) dbProjectData.github_link = projectData.githubLink;
+        if (projectData.liveDemoLink !== undefined) dbProjectData.live_demo_link = projectData.liveDemoLink;
+        if (projectData.techSection !== undefined) dbProjectData.techSection = projectData.techSection;
+
+        const { data, error } = await supabase
+            .from('proyectos')
+            .update(dbProjectData)
             .match({ id });
         if (error) throw error;
         return data;
@@ -118,7 +193,6 @@ const profileService = {
 
     if (error && error.code !== 'PGRST116') {
       // PGRST116 es el código para "no rows returned", lo cual es normal si no se ha creado.
-      console.error('Error al obtener el presentador:', error);
       throw error;
     }
 
@@ -155,8 +229,6 @@ const profileService = {
         }
       }
 
-      console.log('🔄 Datos filtrados para BD:', filteredData);
-
       // 1. Primero, intentamos obtener el presentador actual
       const presentadorActual = await profileService.read();
 
@@ -164,7 +236,6 @@ const profileService = {
 
       if (presentadorActual) {
         // 2. Si existe, lo actualizamos (UPDATE)
-        console.log('Presentador existente, actualizando...');
         ({ data, error } = await supabase
           .from('presentador')
           .update(filteredData)
@@ -173,7 +244,6 @@ const profileService = {
           .single());
       } else {
         // 3. Si no existe, lo creamos (INSERT)
-        console.log('No hay presentador, creando nuevo registro...');
         ({ data, error } = await supabase
           .from('presentador')
           .insert(filteredData)
@@ -182,7 +252,6 @@ const profileService = {
       }
 
       if (error) {
-        console.error('Error al guardar el presentador:', error);
         throw error;
       }
 
@@ -200,7 +269,6 @@ const profileService = {
 
       return data;
     } catch (error) {
-      console.error('Error en profileService.create:', error);
       throw error;
     }
   }

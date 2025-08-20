@@ -31,7 +31,6 @@ export const authenticateUser = async (req, res, next) => {
     next();
 
   } catch (error) {
-    console.error('Error en middleware de autenticación:', error);
     return res.status(500).json({
       error: 'Error interno del servidor',
       message: 'Error al verificar la autenticación'

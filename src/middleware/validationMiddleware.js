@@ -35,6 +35,11 @@ export const projectValidationSchemas = {
       'string.max': 'La descripción no puede exceder 500 caracteres',
       'any.required': 'La descripción es obligatoria'
     }),
+    techSection: Joi.string().min(3).max(200).required().messages({
+      'string.min': 'Las tecnologías deben tener al menos 3 caracteres',
+      'string.max': 'Las tecnologías no pueden exceder 200 caracteres',
+      'any.required': 'El campo \'techSection\' es obligatorio.'
+    }),
     githubLink: Joi.string().uri().optional().allow(''),
     liveDemoLink: Joi.string().uri().optional().allow('')
   }),
@@ -50,6 +55,11 @@ export const projectValidationSchemas = {
       'string.max': 'La descripción no puede exceder 500 caracteres',
       'any.required': 'La descripción es obligatoria'
     }),
+    techSection: Joi.string().min(3).max(200).required().messages({
+      'string.min': 'Las tecnologías deben tener al menos 3 caracteres',
+      'string.max': 'Las tecnologías no pueden exceder 200 caracteres',
+      'any.required': 'El campo \'techSection\' es obligatorio.'
+    }),
     githubLink: Joi.string().uri().optional().allow(''),
     liveDemoLink: Joi.string().uri().optional().allow('')
   }),
@@ -57,6 +67,7 @@ export const projectValidationSchemas = {
     imageSrc: Joi.string().uri().optional(),
     title: Joi.string().min(3).max(100).optional(),
     description: Joi.string().min(10).max(500).optional(),
+    techSection: Joi.string().min(3).max(200).optional(),
     githubLink: Joi.string().uri().optional().allow(''),
     liveDemoLink: Joi.string().uri().optional().allow('')
   }),
@@ -64,6 +75,7 @@ export const projectValidationSchemas = {
     // imageSrc es opcional porque se puede generar desde el archivo o mantener el actual
     title: Joi.string().min(3).max(100).optional(),
     description: Joi.string().min(10).max(500).optional(),
+    techSection: Joi.string().min(3).max(200).optional(),
     githubLink: Joi.string().uri().optional().allow(''),
     liveDemoLink: Joi.string().uri().optional().allow('')
   })
@@ -189,7 +201,10 @@ export const validateParams = (schema) => {
   };
 };
 
-// Esquema para validar IDs
+// Esquema para validar IDs (UUID)
 export const idSchema = Joi.object({
-  id: Joi.number().integer().positive().required()
+  id: Joi.string().uuid().required().messages({
+    'string.uuid': 'El ID debe ser un UUID válido',
+    'any.required': 'El ID es obligatorio'
+  })
 });

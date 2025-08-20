@@ -25,7 +25,6 @@ const profileController = {
                 data: newPresentador
             });
         } catch (error) {
-            console.error('Error al crear el About me:', error);
             res.status(500).json({
                 error: 'Error interno del servidor',
                 details: error.message
@@ -40,7 +39,6 @@ const profileController = {
                 data: presentador
             });
         } catch (error) {
-            console.error('Error al obtener el About me:', error);
             res.status(500).json({
                 error: 'Error interno del servidor'
             });

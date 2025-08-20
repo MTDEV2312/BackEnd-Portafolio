@@ -3,19 +3,31 @@ import { projectService } from '../services/services.js';
 
 const projectController = {
   create: async (req, res) => {
-    try {
+    try { 
       const projectData = req.body;
       
       // Si hay una imagen subida, procesarla
       if (req.file) {
         try {
+          // Verificar que el usuario esté autenticado para subidas
+          if (!req.user) {
+            return res.status(401).json({
+              error: 'Autenticación requerida para subir imágenes'
+            });
+          }
+          
           // Subir la imagen al storage y obtener la URL
-          const imageUrl = await projectService.uploadImage(req.file.buffer, req.file.originalname);
+          const imageUrl = await projectService.uploadImage(
+            req.file.buffer, 
+            req.file.originalname,
+            req.user
+          );
           projectData.imageSrc = imageUrl;
+          
         } catch (uploadError) {
-          console.error('Error al subir la imagen:', uploadError);
           return res.status(500).json({
-            error: 'Error al subir la imagen al storage'
+            error: 'Error al subir la imagen al storage',
+            details: uploadError.message
           });
         }
       }
@@ -35,7 +47,6 @@ const projectController = {
         data: newProject
       });
     } catch (error) {
-      console.error('Error al crear el proyecto:', error);
       res.status(500).json({
         error: 'Error interno del servidor'
       });
@@ -50,7 +61,6 @@ const projectController = {
         data: projects
       });
     } catch (error) {
-      console.error('Error al obtener los proyectos:', error);
       res.status(500).json({
         error: 'Error interno del servidor'
       });
@@ -61,28 +71,72 @@ const projectController = {
     try {
       const { id } = req.params;
       const projectData = req.body;
+      let uploadedImageUrl = null;
+      let oldImageUrl = null;
 
-      // Si hay una imagen subida, procesarla
+      // Si hay una imagen subida, necesitamos manejar el proceso transaccionalmente
       if (req.file) {
         try {
-          // Subir la imagen al storage y obtener la URL
-          const imageUrl = await projectService.uploadImage(req.file.buffer, req.file.originalname);
-          projectData.imageSrc = imageUrl;
+          // Verificar que el usuario esté autenticado para subidas
+          if (!req.user) {
+            return res.status(401).json({
+              error: 'Autenticación requerida para subir imágenes'
+            });
+          }
+          
+          
+          // Paso 1: Obtener el proyecto actual para verificar la imagen anterior
+          const currentProject = await projectService.getById(id);
+          if (currentProject && currentProject.image_src) {
+            oldImageUrl = currentProject.image_src;
+          }
+          
+          // Paso 2: Subir la nueva imagen al storage
+          uploadedImageUrl = await projectService.uploadImage(
+            req.file.buffer, 
+            req.file.originalname,
+            req.user
+          );
+          projectData.imageSrc = uploadedImageUrl;
+          
         } catch (uploadError) {
-          console.error('Error al subir la imagen:', uploadError);
           return res.status(500).json({
-            error: 'Error al subir la imagen al storage'
+            error: 'Error al subir la imagen al storage',
+            details: uploadError.message
           });
         }
       }
 
-      const updatedProject = await projectService.update(id, projectData);
-      res.status(200).json({
-        message: 'Proyecto actualizado exitosamente',
-        data: updatedProject
-      });
+      try {
+        // Paso 3: Actualizar la base de datos
+        const updatedProject = await projectService.update(id, projectData);
+        
+        // Paso 4: Si todo salió bien y había una imagen anterior diferente, eliminarla del storage
+        if (uploadedImageUrl && oldImageUrl && oldImageUrl !== uploadedImageUrl) {
+          try {
+            await projectService.deleteImageFromStorage(oldImageUrl);
+          } catch (deleteError) {
+            // No fallar la operación por esto, solo registrar el warning
+          }
+        }
+        
+        res.status(200).json({
+          message: 'Proyecto actualizado exitosamente',
+          data: updatedProject
+        });
+      } catch (dbError) {
+        // Si falla la actualización de la BD y se subió una nueva imagen, eliminarla
+        if (uploadedImageUrl) {
+          try {
+            await projectService.deleteImageFromStorage(uploadedImageUrl);
+          } catch (cleanupError) {
+            // Error en limpieza de imagen
+          }
+        }
+        
+        throw dbError; // Re-lanzar para que sea manejado por el catch principal
+      }
     } catch (error) {
-      console.error('Error al actualizar el proyecto:', error);
       res.status(500).json({
         error: 'Error interno del servidor'
       });
@@ -99,7 +153,6 @@ const projectController = {
         data: deletedProject
       });
     } catch (error) {
-      console.error('Error al eliminar el proyecto:', error);
       res.status(500).json({
         error: 'Error interno del servidor'
       });

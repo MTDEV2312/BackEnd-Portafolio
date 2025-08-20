@@ -113,15 +113,15 @@ export const securityLogger = (req, res, next) => {
 
   suspiciousPatterns.forEach(pattern => {
     if (pattern.test(url) || pattern.test(userAgent) || pattern.test(body)) {
-      console.warn('🚨 Actividad sospechosa detectada:', {
-        ip: req.ip,
-        url,
-        userAgent,
-        method: req.method,
-        timestamp: new Date().toISOString(),
-        pattern: pattern.source,
-        severity: 'HIGH'
-      });
+      // Actividad sospechosa - log solo en desarrollo
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('🚨 Actividad sospechosa detectada:', {
+          ip: req.ip,
+          url,
+          method: req.method,
+          pattern: pattern.source
+        });
+      }
     }
   });
 
@@ -205,12 +205,13 @@ export const validatePostgreSQLInput = (req, res, next) => {
 
       const containsSQLPattern = sqlPatterns.some(pattern => pattern.test(value));
       if (containsSQLPattern) {
-        console.warn('🚨 Intento de inyección SQL detectado:', {
-          field: key,
-          value: value.substring(0, 100) + '...',
-          ip: req.ip,
-          timestamp: new Date().toISOString()
-        });
+        // Intento de inyección SQL - log solo en desarrollo
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('🚨 Intento de inyección SQL detectado:', {
+            field: key,
+            ip: req.ip
+          });
+        }
         throw new Error(`El campo '${key}' contiene patrones no permitidos`);
       }
     }
