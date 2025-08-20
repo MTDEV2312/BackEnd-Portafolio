@@ -60,8 +60,22 @@ app.use(limiter);
 app.use(securityLogger);
 
 // CORS con configuración específica
+const allowedOrigins = [
+  'http://localhost:3000',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (como mobile apps o curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('No permitido por la política CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
