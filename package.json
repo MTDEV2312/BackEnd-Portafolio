@@ -6,11 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "prod": "NODE_ENV=production node server.js",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "echo 'Add ESLint configuration'",
     "security-audit": "npm audit --audit-level=moderate"
   },
   "keywords": [],
