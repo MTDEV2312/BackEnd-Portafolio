@@ -62,6 +62,9 @@ app.use(securityLogger);
 // CORS con configuración específica
 const allowedOrigins = [
   'http://localhost:3000',
+  'https://www.mathiast.me',
+  'https://mathiast.me',
+  'https://backend.mathiast.me',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
