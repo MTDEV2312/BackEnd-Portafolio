@@ -29,6 +29,32 @@ const app = express();
 // Trust proxy (importante para rate limiting y logs correctos)
 app.set('trust proxy', 1);
 
+// CORS con configuración específica
+const allowedOrigins = [
+  'http://localhost:4321',
+  'https://www.mathiast.me',
+  'https://mathiast.me',
+  'https://backend.mathiast.me',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (como mobile apps o curl requests)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('No permitido por la politica CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 204
+};
+
 // Middleware de seguridad y compresión
 app.use(additionalSecurityHeaders);
 app.use(helmet({
@@ -36,6 +62,10 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 app.use(compression());
+
+// CORS debe ir antes de cualquier middleware que pueda bloquear la request
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Rate limiting mejorado
 const limiter = rateLimit({
@@ -49,8 +79,8 @@ const limiter = rateLimit({
   standardHeaders: true, // Devolver rate limit info en headers `RateLimit-*`
   legacyHeaders: false, // Desactivar headers `X-RateLimit-*`
   skip: (req) => {
-    // Saltar rate limiting para health check
-    return req.path === '/health';
+    // Saltar rate limiting para health check y preflight CORS
+    return req.path === '/health' || req.method === 'OPTIONS';
   }
 });
 
@@ -58,28 +88,6 @@ const limiter = rateLimit({
 app.use(morgan('combined'));
 app.use(limiter);
 app.use(securityLogger);
-
-// CORS con configuración específica
-const allowedOrigins = [
-  'http://localhost:3000',
-  process.env.FRONTEND_URL
-].filter(Boolean);
-
-app.use(cors({
-  origin: function (origin, callback) {
-    // Permitir requests sin origin (como mobile apps o curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('No permitido por la política CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
 
 // Parsers con límites de seguridad
 app.use(express.json({ 
@@ -116,8 +124,6 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     timestamp: new Date().toISOString(),
     endpoints: {
-      profiles: '/api/profiles',
-      projects: '/api/projects',
       health: '/health'
     }
   });
