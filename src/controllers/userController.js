@@ -1,6 +1,7 @@
 import { UserSchema } from '../models/Schemas.js';
 import { userService } from '../services/services.js';
 import { ValidationError, AuthenticationError, catchAsync } from '../middleware/errorMiddleware.js';
+import { runImageMetadataBackfill } from '../utils/backfillImageMetadata.js';
 
 const userController = {
     register: catchAsync(async (req, res) => {
@@ -44,6 +45,23 @@ const userController = {
         res.status(200).json({
             success: true,
             message: 'Logout exitoso'
+        });
+    }),
+
+    runBackfillImageMetadata: catchAsync(async (req, res) => {
+        const parsedMaxRows = Number(req.body?.maxRows);
+        const maxRows = Number.isInteger(parsedMaxRows) && parsedMaxRows > 0 ? parsedMaxRows : null;
+
+        const summary = await runImageMetadataBackfill({
+            verbose: false,
+            maxRows,
+            onlyMissing: true
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Backfill de metadata ejecutado',
+            data: summary
         });
     })
 };
