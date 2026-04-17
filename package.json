@@ -9,7 +9,8 @@
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "security-audit": "npm audit --audit-level=moderate"
+    "security-audit": "npm audit --audit-level=moderate",
+    "backfill:image-metadata": "node src/utils/backfillImageMetadata.js"
   },
   "keywords": [],
   "author": "",
@@ -25,6 +26,7 @@
     "express-validator": "^7.2.1",
     "helmet": "^8.1.0",
     "hpp": "^0.2.3",
+    "image-size": "1.2.1",
     "joi": "^18.0.0",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
