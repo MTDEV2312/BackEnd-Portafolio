@@ -1,5 +1,31 @@
 import Joi from 'joi';
 
+const techSectionSchema = Joi.alternatives().try(
+  Joi.array().items(Joi.string().trim().min(1)).min(1),
+  Joi.string().min(3).max(400)
+).required().messages({
+  'alternatives.match': 'El campo techSection debe ser un string o un array de strings',
+  'any.required': 'El campo \'techSection\' es obligatorio.'
+});
+
+const techSectionOptionalSchema = Joi.alternatives().try(
+  Joi.array().items(Joi.string().trim().min(1)).min(1),
+  Joi.string().min(3).max(400)
+).optional().messages({
+  'alternatives.match': 'El campo techSection debe ser un string o un array de strings'
+});
+
+const imageMetadataSchema = {
+  imageWidth: Joi.number().integer().min(1).max(20000).optional(),
+  imageHeight: Joi.number().integer().min(1).max(20000).optional(),
+  imageAlt: Joi.string().max(180).optional().allow(''),
+  imageMimeType: Joi.string().max(100).optional(),
+  storagePath: Joi.string().max(500).optional(),
+  blurHash: Joi.string().max(200).optional(),
+  dominantColor: Joi.string().pattern(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/).optional(),
+  tinyPreviewUrl: Joi.string().uri().optional().allow('')
+};
+
 // Esquemas de validación con Joi
 export const userValidationSchemas = {
   register: Joi.object({
@@ -35,13 +61,10 @@ export const projectValidationSchemas = {
       'string.max': 'La descripción no puede exceder 500 caracteres',
       'any.required': 'La descripción es obligatoria'
     }),
-    techSection: Joi.string().min(3).max(200).required().messages({
-      'string.min': 'Las tecnologías deben tener al menos 3 caracteres',
-      'string.max': 'Las tecnologías no pueden exceder 200 caracteres',
-      'any.required': 'El campo \'techSection\' es obligatorio.'
-    }),
+    techSection: techSectionSchema,
     githubLink: Joi.string().uri().optional().allow(''),
-    liveDemoLink: Joi.string().uri().optional().allow('')
+    liveDemoLink: Joi.string().uri().optional().allow(''),
+    ...imageMetadataSchema
   }),
   createWithFile: Joi.object({
     // imageSrc es opcional porque se generará automáticamente desde el archivo
@@ -55,29 +78,28 @@ export const projectValidationSchemas = {
       'string.max': 'La descripción no puede exceder 500 caracteres',
       'any.required': 'La descripción es obligatoria'
     }),
-    techSection: Joi.string().min(3).max(200).required().messages({
-      'string.min': 'Las tecnologías deben tener al menos 3 caracteres',
-      'string.max': 'Las tecnologías no pueden exceder 200 caracteres',
-      'any.required': 'El campo \'techSection\' es obligatorio.'
-    }),
+    techSection: techSectionSchema,
     githubLink: Joi.string().uri().optional().allow(''),
-    liveDemoLink: Joi.string().uri().optional().allow('')
+    liveDemoLink: Joi.string().uri().optional().allow(''),
+    ...imageMetadataSchema
   }),
   update: Joi.object({
     imageSrc: Joi.string().uri().optional(),
     title: Joi.string().min(3).max(100).optional(),
     description: Joi.string().min(10).max(500).optional(),
-    techSection: Joi.string().min(3).max(200).optional(),
+    techSection: techSectionOptionalSchema,
     githubLink: Joi.string().uri().optional().allow(''),
-    liveDemoLink: Joi.string().uri().optional().allow('')
+    liveDemoLink: Joi.string().uri().optional().allow(''),
+    ...imageMetadataSchema
   }),
   updateWithFile: Joi.object({
     // imageSrc es opcional porque se puede generar desde el archivo o mantener el actual
     title: Joi.string().min(3).max(100).optional(),
     description: Joi.string().min(10).max(500).optional(),
-    techSection: Joi.string().min(3).max(200).optional(),
+    techSection: techSectionOptionalSchema,
     githubLink: Joi.string().uri().optional().allow(''),
-    liveDemoLink: Joi.string().uri().optional().allow('')
+    liveDemoLink: Joi.string().uri().optional().allow(''),
+    ...imageMetadataSchema
   })
 };
 

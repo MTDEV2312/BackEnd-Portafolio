@@ -1,6 +1,10 @@
 import { ProjectSchema } from '../models/Schemas.js';
 import { projectService } from '../services/services.js';
 
+const setPublicJsonCache = (res, maxAgeSeconds = 300, staleWhileRevalidateSeconds = 600) => {
+  res.set('Cache-Control', `public, max-age=${maxAgeSeconds}, stale-while-revalidate=${staleWhileRevalidateSeconds}`);
+};
+
 const projectController = {
   create: async (req, res) => {
     try { 
@@ -17,12 +21,30 @@ const projectController = {
           }
           
           // Subir la imagen al storage y obtener la URL
-          const imageUrl = await projectService.uploadImage(
+          const imageResult = await projectService.uploadImage(
             req.file.buffer, 
             req.file.originalname,
             req.user
           );
-          projectData.imageSrc = imageUrl;
+          projectData.imageSrc = imageResult.publicUrl;
+          projectData.storagePath = imageResult.storagePath;
+          projectData.imageMimeType = req.file.mimetype;
+
+          if (typeof req.body.imageWidth !== 'undefined') {
+            projectData.imageWidth = Number(req.body.imageWidth);
+          }
+
+          if (typeof req.body.imageHeight !== 'undefined') {
+            projectData.imageHeight = Number(req.body.imageHeight);
+          }
+
+          if (
+            Number.isFinite(projectData.imageWidth) &&
+            Number.isFinite(projectData.imageHeight) &&
+            projectData.imageHeight > 0
+          ) {
+            projectData.imageAspectRatio = Number((projectData.imageWidth / projectData.imageHeight).toFixed(4));
+          }
           
         } catch (uploadError) {
           return res.status(500).json({
@@ -56,6 +78,19 @@ const projectController = {
   read: async (req, res) => {
     try {
       const projects = await projectService.read();
+
+      setPublicJsonCache(res, 120, 600);
+
+      const lastUpdatedAt = projects
+        .map((project) => project.updatedAt)
+        .filter(Boolean)
+        .sort()
+        .pop();
+
+      if (lastUpdatedAt) {
+        res.set('Last-Modified', new Date(lastUpdatedAt).toUTCString());
+      }
+
       res.status(200).json({
         message: 'Proyectos obtenidos exitosamente',
         data: projects
@@ -87,17 +122,36 @@ const projectController = {
           
           // Paso 1: Obtener el proyecto actual para verificar la imagen anterior
           const currentProject = await projectService.getById(id);
-          if (currentProject && currentProject.image_src) {
-            oldImageUrl = currentProject.image_src;
+          if (currentProject && currentProject.imageSrc) {
+            oldImageUrl = currentProject.imageSrc;
           }
           
           // Paso 2: Subir la nueva imagen al storage
-          uploadedImageUrl = await projectService.uploadImage(
+          const imageResult = await projectService.uploadImage(
             req.file.buffer, 
             req.file.originalname,
             req.user
           );
+          uploadedImageUrl = imageResult.publicUrl;
           projectData.imageSrc = uploadedImageUrl;
+          projectData.storagePath = imageResult.storagePath;
+          projectData.imageMimeType = req.file.mimetype;
+
+          if (typeof req.body.imageWidth !== 'undefined') {
+            projectData.imageWidth = Number(req.body.imageWidth);
+          }
+
+          if (typeof req.body.imageHeight !== 'undefined') {
+            projectData.imageHeight = Number(req.body.imageHeight);
+          }
+
+          if (
+            Number.isFinite(projectData.imageWidth) &&
+            Number.isFinite(projectData.imageHeight) &&
+            projectData.imageHeight > 0
+          ) {
+            projectData.imageAspectRatio = Number((projectData.imageWidth / projectData.imageHeight).toFixed(4));
+          }
           
         } catch (uploadError) {
           return res.status(500).json({
