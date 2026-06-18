@@ -1,4 +1,3 @@
-import { UserSchema } from '../models/Schemas.js';
 import { userService } from '../services/services.js';
 import { ValidationError, AuthenticationError, catchAsync } from '../middleware/errorMiddleware.js';
 import { runImageMetadataBackfill } from '../utils/backfillImageMetadata.js';
@@ -45,6 +44,20 @@ const userController = {
         res.status(200).json({
             success: true,
             message: 'Logout exitoso'
+        });
+    }),
+
+    refreshToken: catchAsync(async (req, res) => {
+        const { refreshToken } = req.body;
+        if (!refreshToken) {
+            throw new ValidationError('El token de renovación (refreshToken) es requerido');
+        }
+
+        const session = await userService.refreshToken(refreshToken);
+        res.status(200).json({
+            success: true,
+            message: 'Token renovado exitosamente',
+            data: session
         });
     }),
 

@@ -242,6 +242,13 @@ const userService = {
         } catch (error) {
             throw error;
         }
+    },
+    refreshToken: async (refreshToken) => {
+        const { data, error } = await supabase.auth.refreshSession({
+            refresh_token: refreshToken
+        });
+        if (error) throw error;
+        return data;
     }
 };
 

@@ -14,12 +14,10 @@ import projectsRouter from './routes/projectsRoutes.js';
 // Importar middleware personalizado
 import { errorHandler, notFoundHandler } from './middleware/errorMiddleware.js';
 import { 
-  sanitizeForSQL, 
   preventXSS, 
   preventHPP, 
   securityLogger,
-  additionalSecurityHeaders,
-  validatePostgreSQLInput
+  additionalSecurityHeaders
 } from './middleware/securityMiddleware.js';
 
 dotenv.config();
@@ -56,11 +54,11 @@ const corsOptions = {
 };
 
 // Middleware de seguridad y compresión
-app.use(additionalSecurityHeaders);
 app.use(helmet({
   contentSecurityPolicy: false, // Ya lo manejamos en additionalSecurityHeaders
   crossOriginEmbedderPolicy: false
 }));
+app.use(additionalSecurityHeaders);
 app.use(compression());
 
 // CORS debe ir antes de cualquier middleware que pueda bloquear la request
@@ -101,9 +99,7 @@ app.use(express.urlencoded({
   limit: '10mb' 
 }));
 
-// Middleware de seguridad para sanitización (específico para PostgreSQL)
-app.use(sanitizeForSQL);
-app.use(validatePostgreSQLInput);
+// Middleware de seguridad para sanitización
 app.use(preventXSS);
 app.use(preventHPP);
 
