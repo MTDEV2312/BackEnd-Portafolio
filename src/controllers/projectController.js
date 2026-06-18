@@ -1,4 +1,3 @@
-import { ProjectSchema } from '../models/Schemas.js';
 import { projectService } from '../services/services.js';
 
 const setPublicJsonCache = (res, maxAgeSeconds = 300, staleWhileRevalidateSeconds = 600) => {
@@ -50,15 +49,6 @@ const projectController = {
           return res.status(500).json({
             error: 'Error al subir la imagen al storage',
             details: uploadError.message
-          });
-        }
-      }
-
-      // Validar datos usando el esquema
-      for (const [key, value] of Object.entries(ProjectSchema)) {
-        if (value.required && !projectData[key]) {
-          return res.status(400).json({
-            error: `El campo '${key}' es obligatorio.`
           });
         }
       }

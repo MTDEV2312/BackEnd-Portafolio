@@ -14,6 +14,10 @@ router.post('/login',
   catchAsync(userController.login)
 );
 
+router.post('/refresh-token',
+  catchAsync(userController.refreshToken)
+);
+
 // Rutas privadas (requieren autenticación)
 router.post('/register', 
   validateBody(userValidationSchemas.register),
